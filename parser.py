@@ -1,7 +1,8 @@
 import re
 import os
 import fnmatch
-
+from py2neo import Graph, Path, Node, Relationship, NodeMatcher
+graph = Graph("http://neo4j:surc1234@localhost:7474")
 
 class SmaliParser(object):
     def __init__(self, smali_dir, smali_database, graph):
@@ -57,10 +58,48 @@ class SmaliParser(object):
             called_methods = self.get_called_methods(content=method_data)
             method_calling_to = ''
 
+            # Neo4j
+            matcher = NodeMatcher(graph)
+            bma = matcher.match("Method", name=method_id).first()
+            if bma is None:
+                tx = graph.begin()
+                a = Node("Method", name=method_id)
+                tx.create(a)
+                tx.commit()
+            # Neo4j
+
             for called_method in called_methods:
+            # Neo4j
+                name = '%s->%s' % (called_method[1], called_method[2])
+                sma = matcher.match("Method", name=name).first()
+                if sma is None:
+                    tx = graph.begin()
+                    b = Node("Method", name=name)
+                    tx.create(b)
+                    tx.commit()
+                sma = matcher.match("Method", name=name).first()
+                bma = matcher.match("Method", name=method_id).first()
+                tx = graph.begin()
+                mab = Relationship(bma, "Call", sma)
+                tx.create(mab)
+                tx.commit()
+            # Neo4j
                 method_calling_to = '%s%s->%s,' % (method_calling_to, called_method[1], called_method[2])
 
             self.db.add_method(id=method_id, class_name=class_name, method_name=method_name, parameters=method_parameters, calling_to=method_calling_to, return_value=method_return_value, data=method_data)
+            '''
+            matcher = NodeMatcher(graph)
+            name = "init"
+            ma = matcher.match("Method", name=name).first()
+            name = "Test"
+            mb = matcher.match("Method", name=name).first()
+            print(ma)
+            print(mb)
+            tx = graph.begin()
+            mab = Relationship(ma, "Call", mb)
+            tx.create(mab)
+            tx.commit()
+            '''
 
     def get_class_name(self, content):
         """
