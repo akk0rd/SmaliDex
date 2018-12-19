@@ -2,7 +2,7 @@ import re
 import os
 import fnmatch
 from py2neo import Graph, Path, Node, Relationship, NodeMatcher
-graph = Graph("http://neo4j:surc1234@localhost:7474")
+graph = Graph("http://neo4j:surc1234@l127.0.0.1:7474")
 
 class SmaliParser(object):
     def __init__(self, smali_dir, smali_database, graph):
